@@ -22,18 +22,39 @@ app.use(express.json());
 
 // MongoDB Connection
 const mongoURI = process.env.MONGODB_URI;
-console.log('Attempting to connect to MongoDB...');
-if (mongoURI && !mongoURI.includes('username:password')) {
-  mongoose.connect(mongoURI)
-    .then(() => console.log('MongoDB Connected Successfully'))
-    .catch(err => {
-      console.error('MongoDB Connection Error:', err.message);
-      console.error('Full Error:', err);
+
+const connectDB = async () => {
+  if (mongoose.connection.readyState === 1) {
+    return mongoose.connection;
+  }
+
+  console.log('Attempting to connect to MongoDB...');
+  try {
+    await mongoose.connect(mongoURI, {
+      serverSelectionTimeoutMS: 5000, // Timeout after 5 seconds instead of 30
+      socketTimeoutMS: 45000,
     });
+    console.log('MongoDB Connected Successfully');
+  } catch (err) {
+    console.error('MongoDB Connection Error:', err.message);
+    // Don't throw error here, let the app handle disconnected state
+  }
+};
+
+// Initialize connection
+if (mongoURI && !mongoURI.includes('username:password')) {
+  connectDB();
 } else {
   console.warn('MONGODB_URI is not configured or is using the default placeholder.');
-  console.warn('Backend will use mock data where possible, but some features may return 503.');
 }
+
+// Middleware to ensure DB connection on each request if not connected
+app.use(async (req, res, next) => {
+  if (mongoURI && mongoose.connection.readyState !== 1) {
+    await connectDB();
+  }
+  next();
+});
 
 // API Routes
 app.use('/api/auth', authRoutes);
