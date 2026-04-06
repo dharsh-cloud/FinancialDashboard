@@ -41,18 +41,17 @@ const connectDB = async () => {
   }
 };
 
-// Initialize connection
+// Initialize connection (Non-blocking)
 if (mongoURI && !mongoURI.includes('username:password')) {
-  connectDB();
+  connectDB(); // Start connection in background
 } else {
   console.warn('MONGODB_URI is not configured or is using the default placeholder.');
 }
 
-// Middleware to ensure DB connection on each request if not connected
-app.use(async (req, res, next) => {
-  if (mongoURI && mongoose.connection.readyState !== 1) {
-    await connectDB();
-  }
+// Middleware to ensure DB connection (Optimized for Serverless)
+app.use((req, res, next) => {
+  // Don't await here! Just let it connect in the background.
+  // Controllers will handle the state via mongoose.connection.readyState
   next();
 });
 
