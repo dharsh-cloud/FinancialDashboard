@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import useNotificationStore from './useNotificationStore';
+import api from '../services/api';
 
 const useAuthStore = create((set) => ({
   user: JSON.parse(localStorage.getItem('userInfo')) || null,
@@ -9,8 +10,7 @@ const useAuthStore = create((set) => ({
   login: async (email, password) => {
     set({ loading: true, error: null });
     try {
-      // We'll use axios directly here to avoid interceptor issues before login
-      const { data } = await import('axios').then(m => m.default.post('/api/auth/login', { email, password }));
+      const { data } = await api.post('/auth/login', { email, password });
       localStorage.setItem('userInfo', JSON.stringify(data));
       set({ user: data, loading: false });
       

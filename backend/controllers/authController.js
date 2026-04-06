@@ -12,6 +12,8 @@ export const loginUser = async (req, res) => {
   
   console.log(`--- Login Attempt ---`);
   console.log(`Email: ${email}`);
+  console.log(`Password Length: ${password?.length || 0}`);
+  console.log(`Raw Body Keys: ${Object.keys(req.body || {})}`);
   
   try {
     const isDbConnected = mongoose.connection.readyState === 1;

@@ -2,6 +2,11 @@ import dotenv from 'dotenv';
 // Load environment variables at the very top
 dotenv.config();
 
+console.log('--- Server Starting ---');
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('ADMIN_EMAIL configured:', !!process.env.ADMIN_EMAIL);
+console.log('JWT_SECRET configured:', !!process.env.JWT_SECRET);
+
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
@@ -19,6 +24,12 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Request Logger for Vercel
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next();
+});
 
 // MongoDB Connection
 const mongoURI = process.env.MONGODB_URI;
@@ -59,6 +70,11 @@ app.use((req, res, next) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/transactions', transactionRoutes);
 
+// Fallback for Vercel rewrites (if /api is stripped or doubled)
+app.use('/auth', authRoutes);
+app.use('/transactions', transactionRoutes);
+app.use('/api/api/auth', authRoutes); // Just in case of weird double rewrites
+
 app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'ok', 
@@ -67,7 +83,24 @@ app.get('/api/health', (req, res) => {
     readyState: mongoose.connection.readyState,
     env: process.env.NODE_ENV,
     adminEmailConfigured: !!process.env.ADMIN_EMAIL,
-    jwtSecretConfigured: !!process.env.JWT_SECRET
+    jwtSecretConfigured: !!process.env.JWT_SECRET,
+    adminEmail: (process.env.ADMIN_EMAIL || 'admin@findash.com').replace(/(.{2}).*@(.*)/, '$1***@$2'),
+    time: new Date().toISOString()
+  });
+});
+
+// 404 Handler
+app.use((req, res) => {
+  console.log(`404 Not Found: ${req.method} ${req.url}`);
+  res.status(404).json({ message: `Route ${req.method} ${req.url} not found` });
+});
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error('SERVER ERROR:', err);
+  res.status(500).json({ 
+    message: 'Internal Server Error', 
+    error: process.env.NODE_ENV === 'production' ? 'Check server logs' : err.message 
   });
 });
 
