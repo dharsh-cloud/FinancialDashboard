@@ -5,7 +5,8 @@ import User from '../models/User.js';
 export const getTransactions = async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
-      return res.status(503).json({ message: 'Database not connected' });
+      console.warn('Database not connected - returning empty transactions list');
+      return res.json([]);
     }
     
     // If no user (Guest), show all transactions

@@ -77,7 +77,12 @@ const Login = () => {
             animate={{ opacity: 1, x: 0 }}
             className="bg-rose-50 border border-rose-100 text-rose-600 p-4 rounded-2xl mb-8 text-xs font-black uppercase tracking-widest text-center"
           >
-            {error}
+            <div className="mb-2">{error}</div>
+            {error.includes('failed') && (
+              <div className="text-[8px] opacity-60 lowercase font-normal">
+                Check Vercel logs for "Admin match failed" or "Body Keys"
+              </div>
+            )}
           </motion.div>
         )}
 

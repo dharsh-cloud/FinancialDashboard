@@ -25,6 +25,14 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+// Ensure body is parsed
+app.use((req, res, next) => {
+  if (req.method === 'POST' && !req.body) {
+    console.warn('WARNING: POST request with empty body!');
+  }
+  next();
+});
+
 // Request Logger for Vercel
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
@@ -85,11 +93,18 @@ app.get('/api/health', (req, res) => {
     adminEmailConfigured: !!process.env.ADMIN_EMAIL,
     jwtSecretConfigured: !!process.env.JWT_SECRET,
     adminEmail: (process.env.ADMIN_EMAIL || 'admin@findash.com').replace(/(.{2}).*@(.*)/, '$1***@$2'),
-    time: new Date().toISOString()
+    time: new Date().toISOString(),
+    vercelRegion: process.env.VERCEL_REGION || 'unknown'
   });
 });
 
-// 404 Handler
+// 404 Handler for API
+app.use('/api/*', (req, res) => {
+  console.log(`404 API Not Found: ${req.method} ${req.url}`);
+  res.status(404).json({ message: `API Route ${req.method} ${req.url} not found` });
+});
+
+// 404 Handler for everything else
 app.use((req, res) => {
   console.log(`404 Not Found: ${req.method} ${req.url}`);
   res.status(404).json({ message: `Route ${req.method} ${req.url} not found` });
