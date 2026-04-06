@@ -45,17 +45,13 @@ const TransactionForm = ({ isOpen, onClose, initialData }) => {
     if (success) onClose();
   };
 
-  const handleConfirmWarning = () => {
+  const handleConfirmWarning = async () => {
     setIsWarningOpen(false);
-    // Directly call the logic without the event
-    const submitData = async () => {
-      const success = initialData 
-        ? await updateTransaction(initialData._id, formData)
-        : await addTransaction(formData);
-      
-      if (success) onClose();
-    };
-    submitData();
+    const success = initialData 
+      ? await updateTransaction(initialData._id, formData)
+      : await addTransaction(formData);
+    
+    if (success) onClose();
   };
 
   const categories = ['Food', 'Transport', 'Shopping', 'Bills', 'Salary', 'Freelance', 'Investment', 'Other'];
@@ -196,9 +192,9 @@ const TransactionForm = ({ isOpen, onClose, initialData }) => {
         isOpen={isWarningOpen}
         onClose={() => setIsWarningOpen(false)}
         onConfirm={handleConfirmWarning}
-        showConfirm={false}
-        title="Transaction Blocked"
-        message={`Error: This expense amount ($${formData.amount.toLocaleString()}) exceeds your total income ($${getTotalSummary().totalIncome.toLocaleString()}). You cannot add an expense that exceeds your total available income.`}
+        showConfirm={true}
+        title="High Expense Warning"
+        message={`Warning: This expense amount ($${formData.amount.toLocaleString()}) exceeds your total income ($${getTotalSummary().totalIncome.toLocaleString()}). Your balance will become negative. Do you want to proceed?`}
       />
     </div>
   );

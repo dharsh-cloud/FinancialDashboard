@@ -37,8 +37,8 @@ const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message }) => {
                   Cancel
                 </button>
                 <button
-                  onClick={() => {
-                    onConfirm();
+                  onClick={async () => {
+                    await onConfirm();
                     onClose();
                   }}
                   className="flex-1 px-6 py-3 rounded-2xl bg-red-500 text-white font-bold hover:bg-red-600 transition-colors shadow-lg shadow-red-500/20"

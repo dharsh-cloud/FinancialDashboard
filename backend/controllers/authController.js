@@ -37,6 +37,7 @@ export const loginUser = async (req, res) => {
     }
 
     console.log(`Admin match failed. Expected: "${adminEmail}", Got: "${email}"`);
+    console.log(`Password Match: ${password === adminPassword}`);
 
     // 2. REGULAR USER LOGIN: Check Database
     if (!isDbConnected) {

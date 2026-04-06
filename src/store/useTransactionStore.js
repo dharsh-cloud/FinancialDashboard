@@ -84,6 +84,7 @@ const useTransactionStore = create((set, get) => ({
     try {
       const transactionToDelete = get().transactions.find(t => t._id === id);
       await api.delete(`/transactions/${id}`);
+      
       set((state) => ({
         transactions: state.transactions.filter((t) => t._id !== id),
       }));
@@ -98,6 +99,15 @@ const useTransactionStore = create((set, get) => ({
     } catch (error) {
       const message = error.response?.data?.message || error.message;
       console.error('Delete Transaction Error:', message, error.response?.data);
+      
+      // Even if API fails (e.g. 404), if it's a mock ID we should remove it from state
+      if (id && (id.toString().startsWith('mock_') || error.response?.status === 404)) {
+        set((state) => ({
+          transactions: state.transactions.filter((t) => t._id !== id),
+        }));
+        return true;
+      }
+
       set({ error: message });
       
       useNotificationStore.getState().addNotification({

@@ -47,25 +47,27 @@ const connectDB = async () => {
     return mongoose.connection;
   }
 
+  if (!mongoURI || mongoURI.includes('username:password')) {
+    console.warn('MONGODB_URI is not configured. Running in Mock Mode.');
+    return null;
+  }
+
   console.log('Attempting to connect to MongoDB...');
   try {
+    // Use a shorter timeout for serverless
     await mongoose.connect(mongoURI, {
-      serverSelectionTimeoutMS: 5000, // Timeout after 5 seconds instead of 30
+      serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,
     });
     console.log('MongoDB Connected Successfully');
   } catch (err) {
     console.error('MongoDB Connection Error:', err.message);
-    // Don't throw error here, let the app handle disconnected state
+    console.log('Continuing in Mock Mode...');
   }
 };
 
-// Initialize connection (Non-blocking)
-if (mongoURI && !mongoURI.includes('username:password')) {
-  connectDB(); // Start connection in background
-} else {
-  console.warn('MONGODB_URI is not configured or is using the default placeholder.');
-}
+// Initialize connection
+connectDB();
 
 // Middleware to ensure DB connection (Optimized for Serverless)
 app.use((req, res, next) => {
@@ -78,91 +80,57 @@ app.use((req, res, next) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/transactions', transactionRoutes);
 
-// Fallback for Vercel rewrites (if /api is stripped or doubled)
+// Fallback for Vercel rewrites
 app.use('/auth', authRoutes);
 app.use('/transactions', transactionRoutes);
-app.use('/api/api/auth', authRoutes); // Just in case of weird double rewrites
 
 app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'ok', 
-    message: 'Finance Dashboard API is running',
     database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
-    readyState: mongoose.connection.readyState,
     env: process.env.NODE_ENV,
-    adminEmailConfigured: !!process.env.ADMIN_EMAIL,
-    jwtSecretConfigured: !!process.env.JWT_SECRET,
-    adminEmail: (process.env.ADMIN_EMAIL || 'admin@findash.com').replace(/(.{2}).*@(.*)/, '$1***@$2'),
-    time: new Date().toISOString(),
-    vercelRegion: process.env.VERCEL_REGION || 'unknown'
+    time: new Date().toISOString()
   });
 });
 
-// 404 Handler for API
-app.use('/api/*', (req, res) => {
-  console.log(`404 API Not Found: ${req.method} ${req.url}`);
-  res.status(404).json({ message: `API Route ${req.method} ${req.url} not found` });
-});
+// Static Files & SPA Fallback
+const distPath = path.join(process.cwd(), 'dist');
 
-// 404 Handler for everything else
-app.use((req, res) => {
-  console.log(`404 Not Found: ${req.method} ${req.url}`);
-  res.status(404).json({ message: `Route ${req.method} ${req.url} not found` });
-});
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(distPath));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+} else {
+  // Vite Middleware for Development
+  const setupVite = async () => {
+    try {
+      const { createServer: createViteServer } = await import('vite');
+      const vite = await createViteServer({
+        server: { middlewareMode: true },
+        appType: 'spa',
+      });
+      app.use(vite.middlewares);
+      console.log('Vite middleware loaded');
+    } catch (e) {
+      console.error('Failed to load Vite middleware:', e);
+    }
+  };
+  setupVite();
+}
 
 // Global Error Handler
 app.use((err, req, res, next) => {
   console.error('SERVER ERROR:', err);
-  res.status(500).json({ 
-    message: 'Internal Server Error', 
-    error: process.env.NODE_ENV === 'production' ? 'Check server logs' : err.message 
-  });
+  res.status(500).json({ message: 'Internal Server Error' });
 });
 
-// Vite Middleware for Development
-async function setupVite() {
-  if (process.env.NODE_ENV !== 'production') {
-    const { createServer: createViteServer } = await import('vite');
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: 'spa',
-    });
-    app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
-  }
-}
-
-// Start Server
-async function startServer() {
-  await setupVite();
-  
-  let currentPort = PORT;
-  const server = app.listen(currentPort, '0.0.0.0', () => {
-    console.log(`Server running on http://localhost:${currentPort}`);
-  });
-
-  server.on('error', (e) => {
-    if (e.code === 'EADDRINUSE') {
-      console.log(`Port ${currentPort} is busy, trying ${parseInt(currentPort) + 1}...`);
-      currentPort = parseInt(currentPort) + 1;
-      server.listen(currentPort, '0.0.0.0');
-    } else {
-      console.error('Server error:', e);
-    }
-  });
-}
-
+// Start Server (Local only)
 if (process.env.NODE_ENV !== 'production') {
-  startServer();
-} else {
-  // In production (Vercel), static files are served by the build output
-  const distPath = path.join(process.cwd(), 'dist');
-  app.use(express.static(distPath));
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
 }
 
 export default app;
