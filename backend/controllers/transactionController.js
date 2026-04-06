@@ -8,7 +8,12 @@ export const getTransactions = async (req, res) => {
       return res.status(503).json({ message: 'Database not connected' });
     }
     
-    // Handle non-ObjectId strings (guest/mock users)
+    // If no user (Guest), show all transactions
+    if (!req.user) {
+      const transactions = await Transaction.find({}).sort({ date: -1 });
+      return res.json(transactions);
+    }
+
     const userId = req.user._id;
     const userRole = req.user.role;
     const isValidObjectId = mongoose.Types.ObjectId.isValid(userId);

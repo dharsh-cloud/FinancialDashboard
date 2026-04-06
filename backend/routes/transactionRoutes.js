@@ -7,7 +7,7 @@ const router = express.Router();
 router.get('/global-stats', getGlobalStats);
 
 router.route('/')
-  .get(protect, getTransactions)
+  .get(getTransactions) // Removed 'protect' to allow guest viewing
   .post(protect, admin, addTransaction);
 
 router.route('/:id')

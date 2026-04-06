@@ -79,17 +79,19 @@ const TransactionsTable = ({ limit }) => {
             <option value="expense">Expense</option>
           </select>
 
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => {
-              setEditingTransaction(null);
-              setIsFormOpen(true);
-            }}
-            className="bg-emerald-600 hover:bg-emerald-500 text-white p-2.5 rounded-xl shadow-lg shadow-emerald-500/20 transition-all"
-          >
-            <Plus className="w-5 h-5" />
-          </motion.button>
+          {isAdmin && (
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => {
+                setEditingTransaction(null);
+                setIsFormOpen(true);
+              }}
+              className="bg-emerald-600 hover:bg-emerald-500 text-white p-2.5 rounded-xl shadow-lg shadow-emerald-500/20 transition-all"
+            >
+              <Plus className="w-5 h-5" />
+            </motion.button>
+          )}
         </div>
       </div>
 
@@ -102,7 +104,7 @@ const TransactionsTable = ({ limit }) => {
                 <th className="px-6 py-4 text-[10px] font-black text-emerald-900/40 dark:text-emerald-100/40 uppercase tracking-widest">Category</th>
                 <th className="px-6 py-4 text-[10px] font-black text-emerald-900/40 dark:text-emerald-100/40 uppercase tracking-widest">Date</th>
                 <th className="px-6 py-4 text-[10px] font-black text-emerald-900/40 dark:text-emerald-100/40 uppercase tracking-widest text-right">Amount</th>
-                <th className="px-6 py-4 text-[10px] font-black text-emerald-900/40 dark:text-emerald-100/40 uppercase tracking-widest text-right">Actions</th>
+                {isAdmin && <th className="px-6 py-4 text-[10px] font-black text-emerald-900/40 dark:text-emerald-100/40 uppercase tracking-widest text-right">Actions</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-emerald-50 dark:divide-emerald-900/30">
@@ -148,22 +150,24 @@ const TransactionsTable = ({ limit }) => {
                         {t.type === 'income' ? '+' : '-'}${t.amount.toLocaleString()}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
-                          onClick={() => handleEdit(t)}
-                          className="p-2 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-emerald-600 transition-all"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button 
-                          onClick={() => handleDelete(t._id)}
-                          className="p-2 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-900/20 text-rose-600 transition-all"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
+                    {isAdmin && (
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button 
+                            onClick={() => handleEdit(t)}
+                            className="p-2 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-emerald-600 transition-all"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={() => handleDelete(t._id)}
+                            className="p-2 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-900/20 text-rose-600 transition-all"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    )}
                   </motion.tr>
                 ))}
               </AnimatePresence>
