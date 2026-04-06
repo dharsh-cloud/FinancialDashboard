@@ -90,16 +90,30 @@ async function setupVite() {
   }
 }
 
-// Only listen if this file is run directly
-if (process.env.NODE_ENV !== 'production') {
-  setupVite().then(() => {
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`Server running on http://localhost:${PORT}`);
-    });
+// Start Server
+async function startServer() {
+  await setupVite();
+  
+  let currentPort = PORT;
+  const server = app.listen(currentPort, '0.0.0.0', () => {
+    console.log(`Server running on http://localhost:${currentPort}`);
   });
+
+  server.on('error', (e) => {
+    if (e.code === 'EADDRINUSE') {
+      console.log(`Port ${currentPort} is busy, trying ${parseInt(currentPort) + 1}...`);
+      currentPort = parseInt(currentPort) + 1;
+      server.listen(currentPort, '0.0.0.0');
+    } else {
+      console.error('Server error:', e);
+    }
+  });
+}
+
+if (process.env.NODE_ENV !== 'production') {
+  startServer();
 } else {
   // In production (Vercel), static files are served by the build output
-  // but we still need to handle the SPA fallback if not handled by vercel.json
   const distPath = path.join(process.cwd(), 'dist');
   app.use(express.static(distPath));
 }
