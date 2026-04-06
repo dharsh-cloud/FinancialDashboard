@@ -22,38 +22,15 @@ export const loginUser = async (req, res) => {
     console.log(`Admin Match: ${email === adminEmail}`);
 
     // 1. PRIORITY: Check against Environment/Default Credentials first
-    // This ensures you can ALWAYS log in as admin even if DB is broken
     if (email === adminEmail && password === adminPassword) {
-      console.log('Admin credentials matched (Env/Default)');
-      
-      let user = null;
-      if (isDbConnected) {
-        try {
-          user = await User.findOne({ email });
-          if (!user) {
-            console.log('Admin not in DB, creating...');
-            user = await User.create({
-              name: 'Admin User',
-              email: adminEmail,
-              password: adminPassword,
-              role: 'admin'
-            });
-          }
-        } catch (dbError) {
-          console.error('DB error during admin check:', dbError.message);
-        }
-      }
-
-      // Return success even if DB creation failed (Fallback to mock)
-      const userId = user?._id?.toString() || 'mock_admin_id';
-      console.log(`Generating token for admin ID: ${userId}`);
+      console.log('Admin credentials matched (Env/Default) - FORCING SUCCESS');
       
       return res.json({
-        _id: userId,
-        name: user?.name || 'Admin User',
+        _id: 'admin_id_fixed',
+        name: 'Admin User',
         email: adminEmail,
         role: 'admin',
-        token: generateToken(userId)
+        token: generateToken('admin_id_fixed')
       });
     }
 
