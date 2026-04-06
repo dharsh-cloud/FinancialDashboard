@@ -39,6 +39,24 @@ const useTransactionStore = create((set, get) => ({
     } catch (error) {
       const message = error.response?.data?.message || error.message;
       console.error('Add Transaction Error:', message, error.response?.data);
+      
+      // If server is down or DB disconnected, fallback to local mock add
+      if (error.response?.status === 503 || !error.response) {
+        const mockData = {
+          ...transactionData,
+          _id: 'mock_' + Date.now(),
+          date: transactionData.date || new Date()
+        };
+        set((state) => ({ transactions: [mockData, ...state.transactions] }));
+        
+        useNotificationStore.getState().addNotification({
+          title: 'Transaction Added (Mock Mode)',
+          message: `Successfully added "${mockData.title}" in offline mode`,
+          type: 'success'
+        });
+        return true;
+      }
+
       set({ error: message });
       
       useNotificationStore.getState().addNotification({
@@ -68,6 +86,22 @@ const useTransactionStore = create((set, get) => ({
     } catch (error) {
       const message = error.response?.data?.message || error.message;
       console.error('Update Transaction Error:', message, error.response?.data);
+      
+      // If server is down or DB disconnected, fallback to local mock update
+      if (error.response?.status === 503 || !error.response || id.toString().startsWith('mock_')) {
+        const mockData = { ...transactionData, _id: id };
+        set((state) => ({
+          transactions: state.transactions.map((t) => (t._id === id ? mockData : t)),
+        }));
+        
+        useNotificationStore.getState().addNotification({
+          title: 'Transaction Updated (Mock Mode)',
+          message: `Successfully updated "${mockData.title}" in offline mode`,
+          type: 'success'
+        });
+        return true;
+      }
+
       set({ error: message });
       
       useNotificationStore.getState().addNotification({

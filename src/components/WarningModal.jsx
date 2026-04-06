@@ -38,8 +38,8 @@ const WarningModal = ({ isOpen, onClose, onConfirm, title, message, confirmText 
                 </button>
                 {showConfirm && (
                   <button
-                    onClick={() => {
-                      onConfirm();
+                    onClick={async () => {
+                      await onConfirm();
                       onClose();
                     }}
                     className="flex-1 px-6 py-4 rounded-2xl bg-amber-500 text-white font-black text-[10px] uppercase tracking-widest hover:bg-amber-600 transition-all shadow-lg shadow-amber-500/20"

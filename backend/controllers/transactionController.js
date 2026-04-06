@@ -83,8 +83,10 @@ export const addTransaction = async (req, res) => {
 export const updateTransaction = async (req, res) => {
   const { id } = req.params;
   try {
-    if (mongoose.connection.readyState !== 1 || id.startsWith('mock_') || !mongoose.Types.ObjectId.isValid(id)) {
-      console.warn('Database not connected or Mock ID detected - returning mock success for update');
+    const isAdmin = req.user?.role === 'admin';
+    
+    if (mongoose.connection.readyState !== 1 || !isAdmin || id.startsWith('mock_') || !mongoose.Types.ObjectId.isValid(id)) {
+      console.warn(`Mock mode or non-admin update: DB=${mongoose.connection.readyState}, Role=${req.user?.role}, ID=${id}`);
       return res.json({ ...req.body, _id: id });
     }
     
@@ -102,8 +104,10 @@ export const updateTransaction = async (req, res) => {
 export const deleteTransaction = async (req, res) => {
   const { id } = req.params;
   try {
-    if (mongoose.connection.readyState !== 1 || id.startsWith('mock_') || !mongoose.Types.ObjectId.isValid(id)) {
-      console.warn('Database not connected or Mock ID detected - returning mock success for delete');
+    const isAdmin = req.user?.role === 'admin';
+    
+    if (mongoose.connection.readyState !== 1 || !isAdmin || id.startsWith('mock_') || !mongoose.Types.ObjectId.isValid(id)) {
+      console.warn(`Mock mode or non-admin delete: DB=${mongoose.connection.readyState}, Role=${req.user?.role}, ID=${id}`);
       return res.json({ message: 'Transaction deleted (Mock Mode)' });
     }
     
