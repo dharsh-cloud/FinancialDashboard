@@ -7,12 +7,13 @@ const generateToken = (id) => {
 };
 
 export const loginUser = async (req, res) => {
-  const { email, password } = req.body;
+  const { email: rawEmail, password } = req.body;
+  const email = rawEmail?.toLowerCase();
   console.log(`Login attempt for: ${email}`);
 
   try {
     const isDbConnected = mongoose.connection.readyState === 1;
-    const adminEmail = process.env.ADMIN_EMAIL || 'admin@findash.com';
+    const adminEmail = (process.env.ADMIN_EMAIL || 'admin@findash.com').toLowerCase();
     const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
 
     let user = null;
@@ -56,6 +57,18 @@ export const loginUser = async (req, res) => {
           });
         }
       }
+    } else {
+      // User found in DB. If it's the admin email, check if env password matches
+      if (email === adminEmail && password === adminPassword) {
+        // Force success for admin if env credentials match
+        return res.json({
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          token: generateToken(user._id)
+        });
+      }
     }
 
     if (user) {
@@ -91,4 +104,3 @@ export const loginUser = async (req, res) => {
     res.status(500).json({ message: 'Internal server error during login', error: error.message });
   }
 };
-          
