@@ -8,99 +8,74 @@ const generateToken = (id) => {
 
 export const loginUser = async (req, res) => {
   const { email: rawEmail, password } = req.body;
-  const email = rawEmail?.toLowerCase();
-  console.log(`Login attempt for: ${email}`);
-
+  const email = rawEmail?.toLowerCase()?.trim();
+  
+  console.log(`--- Login Attempt ---`);
+  console.log(`Email: ${email}`);
+  
   try {
     const isDbConnected = mongoose.connection.readyState === 1;
-    const adminEmail = (process.env.ADMIN_EMAIL || 'admin@findash.com').toLowerCase();
+    const adminEmail = (process.env.ADMIN_EMAIL || 'admin@findash.com').toLowerCase().trim();
     const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
 
-    let user = null;
-    
-    if (isDbConnected) {
-      try {
-        user = await User.findOne({ email });
-      } catch (findError) {
-        console.error('Error finding user in DB:', findError.message);
-      }
-    }
+    console.log(`DB Connected: ${isDbConnected}`);
+    console.log(`Admin Match: ${email === adminEmail}`);
 
-    // If user not found in DB, check against mock/env credentials
-    if (!user) {
-      if (email === adminEmail && password === adminPassword) {
-        if (isDbConnected) {
-          try {
+    // 1. PRIORITY: Check against Environment/Default Credentials first
+    // This ensures you can ALWAYS log in as admin even if DB is broken
+    if (email === adminEmail && password === adminPassword) {
+      console.log('Admin credentials matched (Env/Default)');
+      
+      let user = null;
+      if (isDbConnected) {
+        try {
+          user = await User.findOne({ email });
+          if (!user) {
+            console.log('Admin not in DB, creating...');
             user = await User.create({
               name: 'Admin User',
               email: adminEmail,
               password: adminPassword,
               role: 'admin'
             });
-          } catch (createError) {
-            console.error('Could not create admin in DB, using mock response:', createError.message);
-            return res.json({
-              _id: 'mock_admin_id',
-              name: 'Admin User',
-              email: adminEmail,
-              role: 'admin',
-              token: generateToken('mock_admin_id')
-            });
           }
-        } else {
-          return res.json({
-            _id: 'mock_admin_id',
-            name: 'Admin User',
-            email: adminEmail,
-            role: 'admin',
-            token: generateToken('mock_admin_id')
-          });
+        } catch (dbError) {
+          console.error('DB error during admin check:', dbError.message);
         }
       }
-    } else {
-      // User found in DB. If it's the admin email, check if env password matches
-      if (email === adminEmail && password === adminPassword) {
-        // Force success for admin if env credentials match
-        return res.json({
-          _id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          token: generateToken(user._id)
-        });
-      }
+
+      // Return success even if DB creation failed (Fallback to mock)
+      return res.json({
+        _id: user?._id || 'mock_admin_id',
+        name: user?.name || 'Admin User',
+        email: adminEmail,
+        role: 'admin',
+        token: generateToken(user?._id || 'mock_admin_id')
+      });
     }
 
-    if (user) {
-      // If it's a Mongoose document, use matchPassword
-      if (typeof user.matchPassword === 'function') {
-        const isMatch = await user.matchPassword(password);
-        if (isMatch) {
-          return res.json({
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-            token: generateToken(user._id)
-          });
-        }
-      } else {
-        // If it's a mock object, just check the password directly (since it's not hashed in the mock)
-        // Or if it was created in DB but returned as mock, we already verified it.
-        // In the mock case, we already checked email/password before creating the mock object.
-        return res.json({
-          _id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          token: generateToken(user._id)
-        });
-      }
+    // 2. REGULAR USER LOGIN: Check Database
+    if (!isDbConnected) {
+      console.warn('Login failed: Database not connected for regular user');
+      return res.status(503).json({ message: 'Database connecting... please try again in a moment.' });
     }
 
+    const user = await User.findOne({ email });
+    if (user && (await user.matchPassword(password))) {
+      console.log('User authenticated via DB');
+      return res.json({
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        token: generateToken(user._id)
+      });
+    }
+
+    console.warn('Login failed: Invalid credentials');
     res.status(401).json({ message: 'Invalid email or password' });
   } catch (error) {
-    console.error('Login Controller Critical Error:', error.message);
-    res.status(500).json({ message: 'Internal server error during login', error: error.message });
+    console.error('CRITICAL LOGIN ERROR:', error.message);
+    res.status(500).json({ message: 'Server error during login', error: error.message });
   }
 };
