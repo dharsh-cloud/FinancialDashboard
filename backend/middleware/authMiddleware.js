@@ -17,12 +17,12 @@ export const protect = async (req, res, next) => {
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
       
       // Handle mock users
-      if (decoded.id === 'mock_admin_id') {
-        req.user = { _id: 'mock_admin_id', name: 'Admin User', email: 'admin@findash.com', role: 'admin' };
+      if (decoded.id === 'admin_id_fixed' || decoded.id === 'mock_admin_id') {
+        req.user = { _id: 'admin_id_fixed', name: 'Admin User', email: 'admin@findash.com', role: 'admin' };
         return next();
       }
-      if (decoded.id === 'mock_viewer_id' || token === 'guest_token') {
-        req.user = { _id: 'mock_viewer_id', name: 'Viewer User', email: 'viewer@findash.com', role: 'viewer' };
+      if (decoded.id === 'mock_viewer_id' || decoded.id === 'guest_viewer_id' || token === 'guest_token') {
+        req.user = { _id: 'guest_viewer_id', name: 'Guest Viewer', email: 'guest@findash.com', role: 'viewer' };
         return next();
       }
 

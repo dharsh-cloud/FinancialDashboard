@@ -46,8 +46,10 @@ export const getTransactions = async (req, res) => {
 export const addTransaction = async (req, res) => {
   const { title, amount, type, category, date } = req.body;
   try {
-    if (mongoose.connection.readyState !== 1) {
-      console.warn('Database not connected - returning mock success for add');
+    const isAdmin = req.user?.role === 'admin';
+    
+    if (mongoose.connection.readyState !== 1 || !isAdmin) {
+      console.warn(`Mock mode or non-admin add: DB=${mongoose.connection.readyState}, Role=${req.user?.role}`);
       return res.status(201).json({
         _id: 'mock_' + Date.now(),
         title,
