@@ -45,12 +45,15 @@ export const loginUser = async (req, res) => {
       }
 
       // Return success even if DB creation failed (Fallback to mock)
+      const userId = user?._id?.toString() || 'mock_admin_id';
+      console.log(`Generating token for admin ID: ${userId}`);
+      
       return res.json({
-        _id: user?._id || 'mock_admin_id',
+        _id: userId,
         name: user?.name || 'Admin User',
         email: adminEmail,
         role: 'admin',
-        token: generateToken(user?._id || 'mock_admin_id')
+        token: generateToken(userId)
       });
     }
 

@@ -7,8 +7,8 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import authRoutes from './backend/routes/authRoutes.js';
-import transactionRoutes from './backend/routes/transactionRoutes.js';
+import authRoutes from '../backend/routes/authRoutes.js';
+import transactionRoutes from '../backend/routes/transactionRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -66,7 +66,9 @@ app.get('/api/health', (req, res) => {
     message: 'Finance Dashboard API is running',
     database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
     readyState: mongoose.connection.readyState,
-    env: process.env.NODE_ENV
+    env: process.env.NODE_ENV,
+    adminEmailConfigured: !!process.env.ADMIN_EMAIL,
+    jwtSecretConfigured: !!process.env.JWT_SECRET
   });
 });
 
