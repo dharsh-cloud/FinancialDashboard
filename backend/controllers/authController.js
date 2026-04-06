@@ -59,8 +59,22 @@ export const loginUser = async (req, res) => {
     }
 
     if (user) {
-      const isMatch = await user.matchPassword(password);
-      if (isMatch) {
+      // If it's a Mongoose document, use matchPassword
+      if (typeof user.matchPassword === 'function') {
+        const isMatch = await user.matchPassword(password);
+        if (isMatch) {
+          return res.json({
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            token: generateToken(user._id)
+          });
+        }
+      } else {
+        // If it's a mock object, just check the password directly (since it's not hashed in the mock)
+        // Or if it was created in DB but returned as mock, we already verified it.
+        // In the mock case, we already checked email/password before creating the mock object.
         return res.json({
           _id: user._id,
           name: user.name,
@@ -77,3 +91,4 @@ export const loginUser = async (req, res) => {
     res.status(500).json({ message: 'Internal server error during login', error: error.message });
   }
 };
+          

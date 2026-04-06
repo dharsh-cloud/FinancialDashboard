@@ -7,7 +7,6 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { createServer as createViteServer } from 'vite';
 import authRoutes from './backend/routes/authRoutes.js';
 import transactionRoutes from './backend/routes/transactionRoutes.js';
 
@@ -53,6 +52,7 @@ app.get('/api/health', (req, res) => {
 // Vite Middleware for Development
 async function setupVite() {
   if (process.env.NODE_ENV !== 'production') {
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
@@ -71,7 +71,7 @@ async function setupVite() {
 if (process.env.NODE_ENV !== 'production') {
   setupVite().then(() => {
     app.listen(PORT, '0.0.0.0', () => {
-      console.log(`Server running on http://localhost:${PORT}`);
+      console.log(`Server running on http://0.0.0.0\:${PORT}`);
     });
   });
 } else {
